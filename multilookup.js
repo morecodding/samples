@@ -1,3 +1,4 @@
+//CSRManager
 (function(){
     
     window.CSRManager =  window.CSRManager || {};
@@ -46,8 +47,8 @@
             var label = "<label for=\"{{id}}\">{{value}}</label>";
 
             var id = "id_" + name  + choice.LookupId;
-            checkbox = window.CSRManager.Parser.parseObjToHtml(checkbox, ["id:"+id, "name:" +name, "value:" + choice.LookupValue]);
-            label = window.CSRManager.Parser.parseObjToHtml(label, [ "id:" + id, "value:" + choice.LookupValue] );
+            checkbox = CSRManager.Parser.parseObjToHtml(checkbox, ["id:"+id, "name:" +name, "value:" + choice.LookupValue]);
+            label = CSRManager.Parser.parseObjToHtml(label, [ "id:" + id, "value:" + choice.LookupValue] );
 
             return { checkbox: checkbox, label : label, value: label + checkbox };
         }
@@ -59,28 +60,26 @@
 
             var div = "<div id=\"{{id}}\">{{box}}</div>";
 
-            var boxes = window.CSRManager.Elements.createCheckboxes(choices, "produto");
-            div = window.CSRManager.Parser.parseObjToHtml(div, ["id:produto_box", "box:"+boxes]);
+            var boxes = CSRManager.Elements.createCheckboxes(choices, "produto");
+            div = CSRManager.Parser.parseObjToHtml(div, ["id:produto_box", "box:"+boxes]);
 
             SPClientTemplates.Utility.GetFormContextForCurrentField(ctx).registerGetValueCallback(ctx.CurrentFieldSchema.Name, function(){
                 var cs = document.querySelectorAll("#produto_box input[type='checkbox']:checked");
-                return window.CSRManager.Parser.parseMultiLookupValue(cs, "id_produto");
+                return CSRManager.Parser.parseMultiLookupValue(cs, "id_produto");
             });
-
-            return div;
         }    
     }    
 
 })();
 
-
+// exemplo de uso
 (function(){
     
    var overrideCtx = {};
    overrideCtx.Templates = {};
    overrideCtx.Templates.Fields = {
      'Produtos' : {
-       'NewForm' : window.CSRManager.Render.checkbox
+       'NewForm' : CSRManager.Render.checkbox
      }
    };
     
