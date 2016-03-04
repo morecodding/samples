@@ -67,6 +67,7 @@
                 var cs = document.querySelectorAll("#produto_box input[type='checkbox']:checked");
                 return CSRManager.Parser.parseMultiLookupValue(cs, "id_produto");
             });
+            return div;
         }    
     }    
 
