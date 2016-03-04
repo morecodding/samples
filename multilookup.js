@@ -1,73 +1,89 @@
-// testing Sharepoint Multilookup to checkpoint
+(function(){
+    
+    window.CSRManager =  window.CSRManager || {};
 
-
-$("#Abrangencia_f315eae6-5dac-4efa-a1cf-d08846afef83_SelectCandidate").children().each(function(i, x){ 
-	$("Abrangencia_f315eae6-5dac-4efa-a1cf-d08846afef83_SelectResult").apppend(this);
-});
-
-$("#Abrangencia_f315eae6-5dac-4efa-a1cf-d08846afef83_SelectCandidate").children().each(function(i){ 
-	$("Abrangencia_f315eae6-5dac-4efa-a1cf-d08846afef83_SelectResult").append(new Option(this.title, this.value));
-});
-
-$("#Abrangencia_f315eae6-5dac-4efa-a1cf-d08846afef83_SelectResult").append(new Option('1','fd'))
-
-
-function createCheckbox(value, name, text, jiddiv){
-	var checkbox = document.createElement('input');
-	checkbox.type = "checkbox";
-	checkbox.name = name;
-	checkbox.value = value;
-	checkbox.id = "id"+ text;
-
-	var label = document.createElement('label')
-	label.htmlFor = "id"+text;
-	label.appendChild(document.createTextNode(text));
-
-	$(jiddiv).append(checkbox);
-	$(jiddiv).append(label);	
-}
-
-function generateCheckboxes(jid){
-	$(jid).children().each(function(){ 
-		createCheckbox(this.value, "abrangencia", this.title, "#WebPartWPQ2");
-	});
-}
-
-function appendOption(value, title, jid){
-	var opt = new Option(title, value);
-	opt.label = title;
-	$(jid).append(opt);
-}
-
-function addData(value, title){
-	var multilookupPickerVal = $("[id^='Abrangencia_'][id$='MultiLookup']").val();
-    if ($("[id^='Abrangencia_'][id$='MultiLookup']").val() == undefined || $("[id^='Abrangencia_'][id$='MultiLookup']").val().length == 0) {
-        $("[id^='Abrangencia_'][id$='MultiLookup']").val(value + "|t" + title);
+    window.CSRManager.Parser = {
+    parseObjToHtml : function (html, obj){
+        var sub = function(o){
+            var c = o.indexOf(":");
+            if (c == -1)
+                return undefined;
+            return { id: o.substr(0, c), v: o.substr(c+1) }
+        }
+        for(var i =0, l = obj.length; i < l; i++){
+            var v = sub(obj[i]);
+            if(v != undefined)
+                html = html.replace("{{"+v.id+"}}", v.v);
+        }
+        return html;
+    },
+    parseMultiLookupValue : function(cs, toreplace){
+        var m ="";
+        for(var i = 0; i < cs.length; i++){
+            if (m == undefined || m == "") {
+                m = cs[i].id.replace(toreplace, "") + ";#" + cs[i].value;
+            }
+            else {
+                m = m + ";#" + cs[i].id.replace(toreplace, "") + ";#" + cs[i].value;
+            }        
+        }
+        return m;
     }
-    else {
-        $("[id^='Abrangencia_'][id$='MultiLookup']").val(multilookupPickerVal + "|t" + value + "|t" + title);
     }
 
-}
+    window.CSRManager.Elements = {
+     createCheckboxes : function(choices, name){
+        var box = "";
+        for(var i = 0, l = choices.length; i < l; i++){
+            var c = this.createCheckbox(choices[i], name);
+            box += c.label;
+            box += c.checkbox;
+        }
+        return box;
+    },
+    createCheckbox : function(choice, name){
+        var checkbox =  "<input id=\"{{id}}\" type=\"checkbox\" name=\"{{name}}\" value=\"{{value}}\" />";
+        var label = "<label for=\"{{id}}\">{{value}}</label>";
 
-function updateOptions(){
-	//var values = [];
-	$("input[name='abrangencia']:checked").each(function(){
-		//values.push(this.value);
-		//appendOption(this.value, this.id.replace("id", ""), "#Abrangencia_f315eae6-5dac-4efa-a1cf-d08846afef83_SelectResult");
-		addData(this.value, this.id.replace("id", ""));
-	});
+        var id = "id_" + name  + choice.LookupId;
+        checkbox = window.CSRManager.Parser.parseObjToHtml(checkbox, ["id:"+id, "name:" +name, "value:" + choice.LookupValue]);
+        label = window.CSRManager.Parser.parseObjToHtml(label, [ "id:" + id, "value:" + choice.LookupValue] );
 
-	//for (var i = 0; i < values.length; i++) {
-	//	$("#Abrangencia_f315eae6-5dac-4efa-a1cf-d08846afef83_SelectCandidate").find("[value='"+ values[i] + "']").remove();
-	//}
-}
+        return { checkbox: checkbox, label : label, value: label + checkbox };
+    }
+    }
 
-function alterSaveClick(){
+    window.CSRManager.Render = {
+    checkbox: function(ctx){
+        var choices = ctx.CurrentFieldSchema.Choices; //choices array
 
-	var old = $("#ctl00_ctl33_g_1bfedc6c_1c91_49e6_990d_7d4fbb2feff3_ctl00_toolBarTbl_RightRptControls_ctl00_ctl00_diidIOSaveItem").attr("onclick");
-	 $("#ctl00_ctl33_g_1bfedc6c_1c91_49e6_990d_7d4fbb2feff3_ctl00_toolBarTbl_RightRptControls_ctl00_ctl00_diidIOSaveItem").attr("onclick", "updateOptions();" + old);
-}
+        var div = "<div id=\"{{id}}\">{{box}}</div>";
 
-generateCheckboxes("#Abrangencia_f315eae6-5dac-4efa-a1cf-d08846afef83_SelectCandidate");
-alterSaveClick();
+        var boxes = window.CSRManager.Elements.createCheckboxes(choices, "produto");
+        div = window.CSRManager.Parser.parseObjToHtml(div, ["id:produto_box", "box:"+boxes]);
+
+        SPClientTemplates.Utility.GetFormContextForCurrentField(ctx).registerGetValueCallback(ctx.CurrentFieldSchema.Name, function(){
+            var cs = document.querySelectorAll("#produto_box input[type='checkbox']:checked");
+            return window.CSRManager.Parser.parseMultiLookupValue(cs, "id_produto");
+        });
+
+        return div;
+    }    
+    }    
+
+})();
+
+
+(function(){
+    
+   var overrideCtx = {};
+   overrideCtx.Templates = {};
+   overrideCtx.Templates.Fields = {
+     'Produtos' : {
+       'NewForm' : window.CSRManager.Render.checkbox
+     }
+   };
+    
+   SPClientTemplates.TemplateManager.RegisterTemplateOverrides(overrideCtx);
+    
+})();
