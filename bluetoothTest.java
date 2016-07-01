@@ -56,7 +56,6 @@ public class MainActivity extends AppCompatActivity {
         mBluetoothDevicesDiscovered = new ArrayList<>();
 
         if (mBluetoothAdapter != null) {
-            // Device does not support Bluetooth
             checkPermissions();
             enableBluetooth();
             startDiscovery();
@@ -223,12 +222,7 @@ public class MainActivity extends AppCompatActivity {
             try{
                 socket.connect();
                 onConnected(socket);
-                /*runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        ToastMessage("BlackBox conectado");
-                    }
-                });*/
+              
             }
             catch (IOException ex){
                 MException.Log(ex);
